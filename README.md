@@ -11,8 +11,8 @@
 -->
 
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/tudo-aqua/turnkey-gradle-plugin/ci.yml?logo=githubactions&logoColor=white)](https://github.com/tudo-aqua/turnkey-gradle-plugin/actions)
-[![JavaDoc](https://javadoc.io/badge2/tools.aqua/turnkey-gradle-plugin/javadoc.svg)](https://javadoc.io/doc/tools.aqua/turnkey-support)
-[![Maven Central](https://img.shields.io/maven-central/v/tools.aqua/turnkey-gradle-plugin?logo=apache-maven)](https://search.maven.org/artifact/tools.aqua/turnkey-support)
+[![JavaDoc](https://javadoc.io/badge2/tools.aqua/turnkey-gradle-plugin/javadoc.svg)](https://javadoc.io/doc/tools.aqua/turnkey-gradle-plugin)
+[![Maven Central](https://img.shields.io/maven-central/v/tools.aqua/turnkey-gradle-plugin?logo=apache-maven)](https://search.maven.org/artifact/tools.aqua/turnkey-gradle-plugin)
 
 # TurnKey Gradle Plugin
 
