@@ -16,22 +16,12 @@
  * limitations under the License.
  */
 
-plugins {
-  id("com.gradle.develocity") version "3.18.1"
-  id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
-}
+package tools.aqua.turnkey.plugin.util
 
-rootProject.name = "turnkey-gradle-plugin"
+/** Apply [transform] to all elements in this iterable, gathering the results in a [Set]. */
+internal inline fun <T, R> Iterable<T>.mapToSet(transform: (T) -> R): Set<R> =
+    mapTo(LinkedHashSet(), transform)
 
-develocity {
-  buildScan {
-    val isCI = System.getenv("CI").isNullOrEmpty().not()
-    publishing.onlyIf { isCI }
-    if (isCI) {
-      tag("CI")
-      uploadInBackground = false
-      termsOfUseUrl = "https://gradle.com/help/legal-terms-of-use"
-      termsOfUseAgree = "yes"
-    }
-  }
-}
+/** Apply [transform] to all elements in this collection, gathering the results in a [Set]. */
+internal inline fun <T, R> Collection<T>.mapToSet(transform: (T) -> R): Set<R> =
+    mapTo(LinkedHashSet(size), transform)

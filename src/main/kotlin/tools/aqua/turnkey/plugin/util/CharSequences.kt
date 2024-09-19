@@ -16,22 +16,10 @@
  * limitations under the License.
  */
 
-plugins {
-  id("com.gradle.develocity") version "3.18.1"
-  id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
-}
+package tools.aqua.turnkey.plugin.util
 
-rootProject.name = "turnkey-gradle-plugin"
+import org.apache.commons.text.similarity.LevenshteinDistance
 
-develocity {
-  buildScan {
-    val isCI = System.getenv("CI").isNullOrEmpty().not()
-    publishing.onlyIf { isCI }
-    if (isCI) {
-      tag("CI")
-      uploadInBackground = false
-      termsOfUseUrl = "https://gradle.com/help/legal-terms-of-use"
-      termsOfUseAgree = "yes"
-    }
-  }
-}
+/** Compute the Levenshtein distance to [other]. */
+internal infix fun CharSequence.levenshteinDistanceTo(other: CharSequence): Int =
+    LevenshteinDistance.getDefaultInstance().apply(this, other)

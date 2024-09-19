@@ -1,96 +1,176 @@
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/tudo-aqua/z3-turnkey/test.yml?branch=master)](https://github.com/tudo-aqua/z3-turnkey/actions)
-[![JavaDoc](https://javadoc.io/badge2/tools.aqua/z3-turnkey/javadoc.svg)](https://javadoc.io/doc/tools.aqua/z3-turnkey)
-[![Maven Central](https://img.shields.io/maven-central/v/tools.aqua/z3-turnkey?logo=apache-maven)](https://search.maven.org/artifact/tools.aqua/z3-turnkey)
-### The Z3-TurnKey Distribution
+<!--
+   SPDX-License-Identifier: CC-BY-4.0
 
-[The Z3 Theorem Prover](https://github.com/Z3Prover/z3/) is a widely used SMT solver that is written in C and C++. The
-authors provide a Java API, however, it is not trivial to set up in a Java project. This project aims to solve this
-issue.
+   Copyright 2019-2024 The TurnKey Authors
 
-#### Why?
+   This work is licensed under the Creative Commons Attribution 4.0
+   International License.
 
-The Z3 API is hard-coded to load its libraries from the OS's library directory (e.g., `/usr/lib`, `/usr/local/lib`,
-etc. on Linux). These directories should not be writable by normal users. The expected workflow to use Z3 from Java
-would therefore require installing a matching version of the Z3 native libraries as an administrator before using the
-Java bindings.
+   You should have received a copy of the license along with this
+   work. If not, see <https://creativecommons.org/licenses/by/4.0/>.
+-->
 
-Effectively, this makes the creation of Java applications that can be downloaded and run by a user impossible. It would
-be preferable to have a Java artifact that
-1. ships its own native libraries,
-2. can use them without administrative privileges, and
-3. can be obtained using [Maven](https://maven.apache.org/).
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/tudo-aqua/turnkey-gradle-plugin/ci.yml?logo=githubactions&logoColor=white)](https://github.com/tudo-aqua/turnkey-gradle-plugin/actions)
+[![JavaDoc](https://javadoc.io/badge2/tools.aqua/turnkey-gradle-plugin/javadoc.svg)](https://javadoc.io/doc/tools.aqua/turnkey-support)
+[![Maven Central](https://img.shields.io/maven-central/v/tools.aqua/turnkey-gradle-plugin?logo=apache-maven)](https://search.maven.org/artifact/tools.aqua/turnkey-support)
 
-#### Usage
+# TurnKey Gradle Plugin
 
-The artifact is intended as a drop-in replacement for the unpublished Z3 JAR. If your project works with the latter, it
-should continue to work after substituting `z3-turnkey`. The artifact is published via Maven Central. To use it with
-your preferred build management system, you can use a snippet from the
-[Maven Central Repository Search](https://search.maven.org/artifact/tools.aqua/z3-turnkey) by selecting the correct
-version.
+This is a helper plugin for transforming existing libraries into TurnKey bundles. For a detailed
+discussion of TurnKey bundles, see
+[the TurnKey Support Library documentation](https://github.com/tudo-aqua/turnkey-support). The
+plugin provides two core features: binary rewriting and source file rewriting.
 
-#### How?
+## Using the Plugin
 
-This project consists of two parts:
-1. a Java loader, `Z3Loader`, that handles runtime unpacking and linking of the native support libraries, and
-2. a build system that create a JAR from the official Z3 distributions that
-    1. contains all native support libraries built by the Z3 project,
-    2. replaces the hard-coded system library loader with `Z3Loader` by rewriting the Z3 source code,
-    3. fixes the OS X library's search path to a relative one, and
-    3. bundles all of the required files.
-Also, JavaDoc and source JARs are generated for ease of use.
+The plugin is published on Maven Central, _not_ the Gradle Plugin Portal. Add to your
+`settings.gradle.kts`:
 
-#### Building
+```kotlin
+pluginManagement {
+  repositories {
+    gradlePluginPortal()
+    mavenLocal()
+  }
+}
+```
 
-The project is built using [Gradle](https://gradle.org/). In addition to Java 11 or higher, building requires Python 3,
-an `install_name_tool` for OS X and a GPG signature key.
+then import the plugin in the `build.gradle.kts` via
 
-The project can be built and tested on the current platform using:
-> ./gradlew assemble integrationTest
+```kotlin
+plugins {
+  id("tools.aqua.turnkey") version "<version>"
+}
+```
 
-##### Python 3
+When applied, the plugin does nothing. You must add tasks from the plugin to your project to handle
+your specific build scenario.
 
-Python 3 can be acquired as follows:
-- Windows users can use the [official installer](https://www.python.org/downloads/windows/). When using the
-  [Chocolatey package manager](https://chocolatey.org/), Python can be installed using
-  > choco install python
-- OS X users can use the [official installer](https://www.python.org/downloads/mac-osx/). When using the
-  [Homebrew package manager](https://brew.sh/), Python can be installer using
-  > brew install python
-- Linux users should install the Python package provided by their distribution. Most likely, it is already present.
+## Binary Rewriting
 
-Python 3 is discovered by the build script using [https://github.com/xvik/gradle-use-python-plugin].
+Binary rewriting operates on bundles of libraries for a specific platform. Each bundle is analyzed
+as a whole and transformed into TurnKey-linked artifacts. The plugin automatically generates a
+`turnkey.xml` descriptor file for the bundle. The task is applied like this:
 
-##### `install_name_tool`
+```kotlin
+val turnkeyLinuxAMD64 by
+    tasks.registering(ELFTurnKeyTask::class) {
+      libraries.from(myBinaries).filter { it.isFile }
+      rootLibraryNames.add("libexamplejava.so")
+      targetDirectory = layout.buildDirectory.dir("turnkey/linux-amd64")
+      targetSubPath = "com/acme/example/linux/amd64"
+    }
+```
 
-An `install_name_tool` can be acquired as follows:
-- Windows users will need to experiment with Cygwin/MinGW or Docker.
-- OS X already ships an `install_name_tool`.
-- Linux users can use the version shipped by LLVM. 
+Note that the task class is specific to the binary format (in this example, ELF). TurnKey tasks
+offer the following properties:
 
-The `install_name_tool` binary is discovered as follows:
-1. If the project parameter `install_name_tool` is set, its value is used.
-2. Else, `install_name_tool` is tried and used if it exists. This should be the case on OS X.
-3. Else, `llvm-install-name-tool` is tried and used if it exists. This should be the case on other OSes with LLVM 
-   installed.
-4. Else, the build fails.
+- `libraries` (required): must be set to the library files to be analyzed. Do _not_ include
+  duplicates, non-library files, or directories.
+- `rootLibraryNames` (required): the libraries that are required by your Java code. This is often a
+  specific JNI library. All dependencies of this library are automatically included by the plugin.
+- `targetDirectory` (required): the base output directory for the transformed files and the
+  `turnkey.xml`.
+- `targetSubPath` (optional): when set, this suffix is added to the target directory for placement.
+  This is a convenience that allows introducing a package structure while allowing a subsequent task
+  to add the `targetDirectory` to its inputs while maintaining Gradle dependency tracking.
 
-Without an `install_name_tool`, a build can be created by setting the parameter to the `true` application. However, the
-resulting artifact *will not work on OS X*!
-> ./gradlew -Pinstall_name_tool=true assemble integrationTest
+At the moment, tasks for COFF (Windows), ELF (Linux), and Mach-O (macOS) libraries exist. These
+tasks require external, native programs to be installed. Native program lookup is designed to handle
+most installation naming schemes by searching the following naming schemes for the program `example`
+in each directory on the `$PATH`:
 
-##### Signing
+1. try `example`
+2. for each defined file name extension `.`_e_ in `$PATHEXT`, try `example.`_e_ (required for `.exe`
+   on Windows)
+3. try `example-`_n_, where _n_ is a numeric version (required for multiple LLVM versions on
+   Debian); in case of conflicts, the highest version is chosen
+4. try `llvm-example` (required for LLVM reimplementations of tools)
+5. try `llvm-example-`_n_ (required for multiple LLVM reimplementaion version on Debian); in case of
+   conflicts, the highest version is chosen
 
-Normally, Gradle will enforce a GPG signature on the artifacts. By setting the project parameter `skip-signing`,
-enforcement is disabled:
-> ./gradlew -Pskip-signing assemble
+### COFF Support
 
-##### Releasing
+COFF libraries can be handled by the `COFFTurnKeyTask`. This task requires a `readobj` binary to be
+installed. Both the GNU project and the LLVM project provide implementations. Since on Windows, no
+relative linkage can be specified, this task only analyzes the dependency graph and generates
+explicit load instructions for all dependents. No rewriting is performed.
 
-This project uses the `maven-pubish` plugin in combination with the `Gradle Nexus Publish Plugin`.
-To publis and autoclose a version, run `./gradlew publishToSonatype closeAndReleaseSonatypeStagingRepository`
-as one command. Due to [WIP in the Gradle Nexus Publish Plugin](https://github.com/gradle-nexus/publish-plugin/issues/19) this has to be run in conjunction for now.
+### ELF Support
 
-#### License
+ELF libraries can be handled by the `ELFTurnKeyTask`. This task requires a `patchelf` binary to be
+installed, which is maintained by the NixOS project. This sets each library's RPath to origin
+linkage (i.e., same-directory lookup). Only the root libraries need to be loaded.
 
-Z3 is licensed under the [MIT License](https://github.com/Z3Prover/z3/blob/master/LICENSE.txt). The support files in
-this project are licensed under the [ISC License](https://opensource.org/licenses/ISC).
+### Mach-O Support
+
+Mach-O libraries can be handled by the `MachOTurnKeyTask`. This task requires both a
+`install_name_tool` (alternatively: `install-name-tool`) and a `otool` binary to be installed. Both
+Apple and the LLVM project provide implementations. This sets each bundled dependency's linkage to
+loader-relative paths (i.e., same-directory lookup). Only the root libraries need to be loaded.
+
+## Java Rewriting
+
+Java rewriting operates on single files via [JavaParser](https://javaparser.org/). It is designed to
+insert calls to the TurnKey support library into an existing native wrapper that does not use the
+TurnKey abstraction. A transformation can be defined like this:
+
+```kotlin
+val rewriteNativeJava by
+    tasks.registering(JavaRewriteTask::class) {
+      inputDirectory = myJava.flatMap { it.outputDir }
+      inputFile = "com/acme/example/Native.java"
+
+      rewrite { compilationUnit ->
+        val nativeClass = compilationUnit.types.single { it.name.id == "Native" }
+        val staticInitializer =
+          nativeClass.members
+            .filterIsInstance<InitializerDeclaration>()
+            .first(InitializerDeclaration::isStatic)
+        staticInitializer.body =
+          BlockStmt(
+            NodeList(
+              ExpressionStmt(
+                MethodCallExpr(
+                  "tools.aqua.turnkey.support.TurnKey.load",
+                  StringLiteralExpr("com/acme/example"),
+                  MethodReferenceExpr(
+                    ClassExpr(parseClassOrInterfaceType("com.acme.example.Native")),
+                    NodeList(),
+                    "getResourceAsStream")),
+              )))
+      }
+
+      outputDirectory = layout.buildDirectory.dir("generated/rewritten")
+    }
+```
+
+The task offers the following properties:
+
+- `inputDirectory` (required): must be set to a directory containing Java source files.
+- `inputFile` (required): is resolved relative to the `inputDirectory` to locate the file to
+  rewrite. This is a convenience that allows depending on a previous task's outputs via the
+  `inputDirectory` while maintaining Gradle dependency tracking.
+- `rewrite` (required): a function that accepts a JavaParser `CompilationUnit` and applies the
+  desired transformation. For convenience, this can be set via a function, as shown above. The
+  example above replaces a static initializer with a call to the TurnKey support library.
+  **Important:** the lambda assigned to this variable is subjected to Java serialization by Gradle
+  for rebuild elision purposes. If the lambda captures any non-serializable object (e.g., the
+  containing task object), runtime errors will result!
+- `outputDirectory` (required): the base output directory for the transformed Java file.
+- `outputFile` (optional): is resolved relative to the `outputDirectory` to locate the rewritten
+  file (defaults to the `inputFile`). This is a convenience that allows maintaining a package
+  structure while allowing a subsequent task to add the `outputDirectory` to its inputs while
+  maintaining Gradle dependency tracking.
+
+## Java and Gradle
+
+The plugin requires Java 17 (minimum for Gradle 9+) and is linked against the Gradle 8.10.1 stack.
+
+## License
+
+The plugin and other non-runtime code are licensed under the
+[Apache Licence, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0). Standalone documentation
+is licensed under the
+[Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
+Dependencies use other open-source licenses.
