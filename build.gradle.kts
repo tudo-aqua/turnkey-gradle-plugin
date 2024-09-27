@@ -87,6 +87,7 @@ dependencies {
   implementation(libs.jimfs)
   implementation(libs.turnkey.support)
 
+  testImplementation(platform(libs.junit))
   testImplementation(libs.assertj.core)
   testImplementation(libs.junit.jupiter)
   testRuntimeOnly(libs.junit.launcher)
