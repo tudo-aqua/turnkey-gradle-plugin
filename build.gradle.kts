@@ -37,7 +37,8 @@ plugins {
   signing
 
   alias(libs.plugins.detekt)
-  alias(libs.plugins.dokka)
+  alias(libs.plugins.dokka.html)
+  alias(libs.plugins.dokka.javadoc)
   alias(libs.plugins.gitVersioning)
   alias(libs.plugins.nexusPublish)
   alias(libs.plugins.node)
@@ -166,8 +167,8 @@ kotlin { jvmToolchain(17) }
 val kdocJar by
     tasks.registering(Jar::class) {
       group = BUILD_GROUP
-      dependsOn(tasks.dokkaHtml)
-      from(tasks.dokkaHtml.flatMap { it.outputDirectory })
+      dependsOn(tasks.dokkaGeneratePublicationHtml)
+      from(tasks.dokkaGeneratePublicationHtml.flatMap { it.outputDirectory })
       archiveClassifier.set("kdoc")
     }
 
@@ -192,8 +193,8 @@ javaComponent.addVariantsFromConfiguration(kdoc.get()) {}
 val javadocJar by
     tasks.registering(Jar::class) {
       group = BUILD_GROUP
-      dependsOn(tasks.dokkaJavadoc)
-      from(tasks.dokkaJavadoc.flatMap { it.outputDirectory })
+      dependsOn(tasks.dokkaGeneratePublicationJavadoc)
+      from(tasks.dokkaGeneratePublicationJavadoc.flatMap { it.outputDirectory })
       archiveClassifier.set("javadoc")
     }
 
