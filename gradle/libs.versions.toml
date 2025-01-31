@@ -29,7 +29,7 @@ nexusPublish = { id = "io.github.gradle-nexus.publish-plugin", version = "2.0.0"
 node = { id = "com.github.node-gradle.node", version = "7.1.0" }
 spotless = { id = "com.diffplug.spotless", version = "7.0.2" }
 taskTree = { id = "com.dorongold.task-tree", version = "4.0.0" }
-versions = { id = "com.github.ben-manes.versions", version = "0.51.0" }
+versions = { id = "com.github.ben-manes.versions", version = "0.52.0" }
 
 [libraries]
 
