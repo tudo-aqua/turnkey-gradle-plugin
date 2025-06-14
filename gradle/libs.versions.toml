@@ -34,7 +34,7 @@ versions = { id = "com.github.ben-manes.versions", version = "0.52.0" }
 [libraries]
 
 assertj-core = { group = "org.assertj", name = "assertj-core", version = "3.27.3" }
-commons-io = { group = "commons-io", name = "commons-io", version = "2.18.0" }
+commons-io = { group = "commons-io", name = "commons-io", version = "2.19.0" }
 commons-text = { group = "org.apache.commons", name = "commons-text", version = "1.13.1" }
 detekt-compiler = { group = "com.braisgabin.detekt", name = "kotlin-compiler-wrapper", version = "0.0.4" }
 detekt-faire = { group = "com.faire", name = "faire-detekt-rules", version = "0.5.1" }
